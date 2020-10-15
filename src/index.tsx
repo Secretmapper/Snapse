@@ -4,6 +4,13 @@ import './index.css'
 import App from './components/App'
 import * as serviceWorker from './serviceWorker'
 
+import cytoscape from 'cytoscape'
+import cxtmenu from 'cytoscape-cxtmenu'
+import edgehandles from 'cytoscape-edgehandles'
+
+cytoscape.use(cxtmenu)
+cytoscape.use(edgehandles as any)
+
 ReactDOM.render(
   <React.StrictMode>
     <App />
