@@ -1,332 +1,146 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import cytoscapejs from 'cytoscape'
-import Graph from '../Graph'
+import Snapse from '../Snapse'
 import styled from 'styled-components'
+import {
+  initialize,
+  neurons as initialNeurons,
+  NeuronsMap,
+  NeuronsStatesMap,
+  step
+} from '../../automata/snapse'
+import { createEdge, createNeuron, createOutput } from '../Snapse/helpers'
+import classList from '../../utils/classList'
 
-const card = (
-  id: string,
-  x: number,
-  y: number,
-  label: string,
-  rules: string,
-  spike: number,
-  time: number
-): cytoscapejs.ElementDefinition[] => [
-  {
-    data: { rootId: id, id: `${id}`, label },
-    classes: 'snapse-node',
-    position: { x: 0, y: 0 }
-  },
-  {
-    data: { rootId: id, id: `${id}-rules`, parent: id, label: rules },
-    classes: 'snapse-node__rules',
-    position: { x, y: y }
-  },
-  {
-    data: { rootId: id, id: `${id}-spike`, parent: id, label: spike },
-    classes: 'snapse-node__spike',
-    position: { x, y: y + 90 }
-  },
-  {
-    data: { rootId: id, id: `${id}-time`, parent: id, label: time },
-    classes: 'snapse-node__time',
-    position: { x, y: y + 110 }
-  }
-]
+function convert(
+  neurons: NeuronsMap,
+  neuronsState: NeuronsStatesMap,
+  prevStates: NeuronsStatesMap = {}
+): cytoscapejs.ElementDefinition[] {
+  let elements: cytoscapejs.ElementDefinition[] = []
 
-const createOutput = (
-  id: string,
-  x: number,
-  y: number,
-  label: string,
-  spike: number
-): cytoscapejs.ElementDefinition[] => [
-  {
-    data: { rootId: id, id: `${id}`, label },
-    classes: 'snapse-output',
-    position: { x: 0, y: 0 }
-  },
-  {
-    data: { rootId: id, id: `${id}-output`, parent: id, label: '' },
-    classes: 'snapse-node__output',
-    position: { x, y: y }
-  },
-  {
-    data: { rootId: id, id: `${id}-spike`, parent: id, label: spike },
-    classes: 'snapse-node__spike',
-    position: { x, y: y + 50 }
-  }
-]
+  for (let k in neurons) {
+    const neuron = neurons[k]
+    const state = neuronsState[k]
+    const prevState = prevStates[neuron.id]
 
-let qId = 2
+    if (!('isOutput' in neuron)) {
+      const neuronCard = createNeuron(
+        neuron.id,
+        neuron.position.x,
+        neuron.position.y,
+        neuron.id,
+        neuron.rules.join('\n'),
+        state.spikes,
+        state.delay
+      )
+      if (prevState) {
+        if (prevState.spikes < state.spikes) {
+          neuronCard[2].classes = classList.add(
+            neuronCard[2].classes,
+            'node--value-increase'
+          )
+        } else if (prevState.spikes > state.spikes) {
+          neuronCard[2].classes = classList.add(
+            neuronCard[2].classes,
+            'node--value-decrease'
+          )
+        }
 
-const oneLabel = `
-a/a->a;1
-aa/a->a;1
-`
-const initialState: cytoscapejs.ElementDefinition[] = [
-  ...card('one', 0, 0, 'q0', oneLabel, 2, 0),
-  ...card('two', 250, 0, 'q1', oneLabel, 2, 0),
-  {
-    data: {
-      id: 'one-two',
-      source: 'one',
-      target: 'two',
-      label: 'Edge from Node1 to Node2'
+        if (prevState.delay < state.delay) {
+          neuronCard[3].classes = classList.add(
+            neuronCard[3].classes,
+            'node--value-increase'
+          )
+        } else if (prevState.delay > state.delay) {
+          neuronCard[3].classes = classList.add(
+            neuronCard[3].classes,
+            'node--value-decrease'
+          )
+        }
+      }
+      if (state.justResolvedRule) {
+        neuronCard[1].classes = classList.add(
+          neuronCard[1].classes,
+          'node--triggering'
+        )
+      }
+      elements = elements.concat(neuronCard)
+      if (neuron.out) {
+        for (let out of neuron.out) {
+          const edges = createEdge(neuron.id, out)
+          if (state.justResolvedRule) {
+            edges[0].classes = classList.add(
+              edges[0].classes,
+              'edge--triggering'
+            )
+          }
+          elements = elements.concat(edges)
+        }
+      }
+    } else {
+      elements = elements.concat(
+        createOutput(
+          neuron.id,
+          neuron.position.x,
+          neuron.position.y,
+          neuron.id,
+          state.delay
+        )
+      )
     }
   }
-]
 
-type EditingState = {
-  id?: string
-  position: {
-    x: number
-    y: number
-  }
-  renderedPosition: {
-    x: number
-    y: number
-  }
-  rules: string
-  spike: string
+  return elements
+}
+
+function usePrevious<T>(value: T) {
+  const ref = useRef<T>()
+  useEffect(() => {
+    ref.current = value
+  })
+  return ref.current
 }
 
 function App() {
-  const [elements, setElements] = useState(initialState)
-  const [editing, setEditing] = useState<EditingState | null>(null)
+  const [neurons, setNeurons] = useState(initialNeurons)
+  const [neuronsState, setNeuronsState] = useState(() => initialize(neurons))
+  const previousNeuronsState = usePrevious(neuronsState)
+  const [, setElements] = useState(() => convert(initialNeurons, neuronsState))
 
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const onSubmitForm = (e: React.ChangeEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (editing) {
-      const spikeValue = parseInt(editing.spike, 10)
-      const spikeLabel = isNaN(spikeValue) ? 0 : spikeValue
-
-      if (editing.id != null) {
-        const id = editing.id
-        const rules = elements.find(el => el.data.id === `${id}-rules`)
-        const spike = elements.find(el => el.data.id === `${id}-spike`)
-
-        if (rules) {
-          rules.data.label = editing.rules
-        }
-        if (spike) {
-          spike.data.label = spikeLabel
-        }
-      } else {
-        // create a new node
-        const id = `q${qId++}`
-        setElements(elms => [
-          ...elements,
-          ...card(
-            id,
-            editing.position.x,
-            editing.position.y,
-            id,
-            editing.rules,
-            spikeLabel,
-            0
-          )
-        ])
-      }
-      setEditing(null)
-    }
+  const onForward = () => {
+    setNeuronsState(step(neurons, neuronsState))
   }
-  const onRulesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const rules = e.target.value
-    setEditing(ed => (ed ? { ...ed, rules } : null))
-  }
-  const onSpikeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const spike = e.target.value
-    setEditing(ed => (ed ? { ...ed, spike } : null))
-  }
-  const onEditNode = (
-    e: cytoscapejs.NodeSingular,
-    evt: cytoscapejs.EventObject
-  ) => {
-    const id = e.id()
-    const rules = elements.find(el => el.data.id === `${id}-rules`)?.data.label
-    const spike = elements.find(el => el.data.id === `${id}-spike`)?.data.label
-
-    setEditing({
-      id,
-      renderedPosition: e.renderedPosition(),
-      position: e.position(),
-      rules,
-      spike
-    })
-  }
-  const onDeleteNode = (id: string) => {
-    setElements(elements => elements.filter(el => el.data.rootId !== id))
-  }
-  const onDeleteEdge = (id: string) => {
-    setElements(elements => elements.filter(el => el.data.id !== id))
-  }
-
-  const onSurfaceClick = (evt: cytoscapejs.EventObject) => {
-    setEditing({
-      renderedPosition: evt.renderedPosition,
-      position: evt.position,
-      rules: '',
-      spike: ''
-    })
-  }
-  const onCreateOutput = (evt: cytoscapejs.EventObject) => {
-    const id = `q${qId++}`
-    setElements([
-      ...elements,
-      ...createOutput(id, evt.position.x, evt.position.y, id, 12)
-    ])
-  }
-  const onEdgeCreate = (
-    src: cytoscapejs.NodeSingular,
-    dst: cytoscapejs.NodeSingular,
-    addedEles: cytoscapejs.EdgeCollection
-  ) => {
-    setElements([
-      ...elements,
-      ...(addedEles.jsons() as any).map((a: any) => ({ data: a.data }))
-    ])
-  }
-
-  const cbs = {
-    onSurfaceClick,
-    onCreateOutput,
-    onEditNode,
-    onDeleteNode,
-    onDeleteEdge
-  }
-  const cbsRef = useRef(cbs)
-  cbsRef.current = cbs
-  const cxtMenus = useMemo(
-    () => [
-      {
-        selector: 'core',
-        commands: [
-          {
-            content: 'Create Node',
-            select: function (_: any, e: cytoscapejs.EventObject) {
-              cbsRef.current.onSurfaceClick(e)
-            }
-          },
-          {
-            content: 'Create Output',
-            select: function (_: any, e: cytoscapejs.EventObject) {
-              cbsRef.current.onCreateOutput(e)
-            }
-          }
-        ]
-      },
-      {
-        selector: 'node',
-        commands: [
-          {
-            content: 'Edit Node',
-            select: function (
-              ele: cytoscapejs.NodeSingular,
-              e: cytoscapejs.EventObject
-            ) {
-              cbsRef.current.onEditNode(ele, e)
-            }
-          },
-          {
-            content: 'Delete Node',
-            select: function (ele: cytoscapejs.NodeSingular) {
-              cbsRef.current.onDeleteNode(ele.id())
-            }
-          }
-        ]
-      },
-      {
-        selector: 'edge',
-        commands: [
-          {
-            content: 'Delete Edge',
-            select: function (ele: cytoscapejs.NodeSingular) {
-              cbsRef.current.onDeleteEdge(ele.id())
-            }
-          }
-        ]
-      }
-    ],
-    [cbsRef]
-  )
+  const elements = convert(neurons, neuronsState, previousNeuronsState)
 
   return (
     <Container>
-      <Graph
+      <Snapse
         elements={elements}
-        editing={editing}
-        cxtMenus={cxtMenus}
-        onEdgeCreate={onEdgeCreate}
+        setElements={setElements}
+        setNeurons={setNeurons}
       />
-      {editing && (
-        <InputContainer
-          style={{
-            left: editing?.renderedPosition.x,
-            top: editing?.renderedPosition.y
-          }}>
-          <form onSubmit={onSubmitForm}>
-            <div>
-              <label>Rules</label>
-            </div>
-            <div>
-              <RulesInput
-                autoFocus
-                ref={inputRef}
-                value={editing?.rules}
-                onChange={onRulesChange}
-              />
-            </div>
-            <div>
-              <label>Initial Spikes</label>
-            </div>
-            <div>
-              <SpikeInput
-                placeholder="0"
-                type="number"
-                value={editing?.spike}
-                onChange={onSpikeChange}
-              />
-            </div>
-            <div>
-              <button>Save Node</button>
-            </div>
-          </form>
-        </InputContainer>
-      )}
+      <Controls>
+        <StepBackButton>Back</StepBackButton>
+        <PlayButton>Play</PlayButton>
+        <StepForwardButton onClick={onForward}>Forward</StepForwardButton>
+      </Controls>
     </Container>
   )
 }
 
 const Container = styled.div`
-  position: relative;
+  height: 100%;
+  width: 100%;
   flex: 1;
-  width: '100%';
 `
-
-const InputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
+const Controls = styled.div`
   position: absolute;
-  text-align: center;
-  transform: translate3d(-50%, -50%, 0);
+  top: 0;
+  left: 0;
 `
-
-const RulesInput = styled.textarea`
-  background-color: rgba(244, 244, 244, 1);
-  height: 150px;
-  margin: 2px;
-  outline-width: thin;
-  text-align: center;
-  width: 100px;
-`
-
-const SpikeInput = styled.input`
-  background-color: rgba(244, 244, 244, 1);
-  margin: 2px;
-  outline-width: thin;
-  text-align: center;
-`
+const StepBackButton = styled.button``
+const PlayButton = styled.button``
+const StepForwardButton = styled.button``
 
 export default App

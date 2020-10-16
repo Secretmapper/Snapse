@@ -140,11 +140,12 @@ const stylesheet: cytoscapejs.Stylesheet[] = [
     selector: '.snapse-node__time, .snapse-node__spike',
     style: {
       'background-opacity': '0' as any,
-      content: 'data(label)',
       'text-halign': 'center',
       'text-valign': 'center',
+      content: 'data(label)',
       events: 'no',
-      height: 12,
+      height: 15,
+      shape: 'roundrectangle',
       width: 50
     }
   },
@@ -155,7 +156,44 @@ const stylesheet: cytoscapejs.Stylesheet[] = [
       'target-arrow-shape': 'triangle',
       'text-background-color': 'white',
       'text-background-shape': 'rectangle',
-      width: '1'
+      width: 1
+    }
+  },
+  {
+    selector: '.node--value-increase, .node--value-decrease',
+    style: {
+      'transition-property': 'background-opacity',
+      'transition-duration': '0.5s' as any
+    }
+  },
+  {
+    selector: '.node--value-increase',
+    style: {
+      'background-color': '#A4DE02',
+      'background-opacity': 1,
+      content: ele => '▲' + ele.data('label')
+    }
+  },
+  {
+    selector: '.node--value-decrease',
+    style: {
+      'background-color': '#E0371F',
+      'background-opacity': 1,
+      color: 'white',
+      content: ele => '▼' + ele.data('label')
+    }
+  },
+  {
+    selector: '.node--triggering',
+    style: {}
+  },
+  {
+    selector: '.edge--triggering',
+    style: {
+      'line-color': 'darkgreen',
+      'line-style': 'dashed',
+      'target-arrow-color': 'darkgreen',
+      width: 3
     }
   }
 ]
