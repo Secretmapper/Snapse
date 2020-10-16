@@ -65,8 +65,8 @@ a/a->a;1
 aa/a->a;1
 `
 const initialState: cytoscapejs.ElementDefinition[] = [
-  ...card('one', 0, 0, 'q0', oneLabel, 12, 12),
-  ...card('two', 250, 0, 'q1', oneLabel, 12, 12),
+  ...card('one', 0, 0, 'q0', oneLabel, 2, 0),
+  ...card('two', 250, 0, 'q1', oneLabel, 2, 0),
   {
     data: {
       id: 'one-two',
@@ -87,7 +87,8 @@ type EditingState = {
     x: number
     y: number
   }
-  value: string
+  rules: string
+  spike: string
 }
 
 function App() {
@@ -97,31 +98,64 @@ function App() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const onSubmitForm = (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault()
-    inputRef.current?.blur()
-  }
-  const onInputBlur = () => {
     if (editing) {
-      const id = `q${qId++}`
-      setElements([
-        ...elements,
-        ...card(
-          id,
-          editing.position.x,
-          editing.position.y,
-          id,
-          editing.value,
-          12,
-          12
-        )
-      ])
+      const spikeValue = parseInt(editing.spike, 10)
+      const spikeLabel = isNaN(spikeValue) ? 0 : spikeValue
+
+      if (editing.id != null) {
+        const id = editing.id
+        const rules = elements.find(el => el.data.id === `${id}-rules`)
+        const spike = elements.find(el => el.data.id === `${id}-spike`)
+
+        if (rules) {
+          rules.data.label = editing.rules
+        }
+        if (spike) {
+          spike.data.label = spikeLabel
+        }
+      } else {
+        // create a new node
+        const id = `q${qId++}`
+        setElements(elms => [
+          ...elements,
+          ...card(
+            id,
+            editing.position.x,
+            editing.position.y,
+            id,
+            editing.rules,
+            spikeLabel,
+            0
+          )
+        ])
+      }
       setEditing(null)
     }
   }
-  const onInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setEditing(ed => (ed ? { ...ed, value } : null))
+  const onRulesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const rules = e.target.value
+    setEditing(ed => (ed ? { ...ed, rules } : null))
   }
-  const onEditNode = (id: string) => {}
+  const onSpikeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const spike = e.target.value
+    setEditing(ed => (ed ? { ...ed, spike } : null))
+  }
+  const onEditNode = (
+    e: cytoscapejs.NodeSingular,
+    evt: cytoscapejs.EventObject
+  ) => {
+    const id = e.id()
+    const rules = elements.find(el => el.data.id === `${id}-rules`)?.data.label
+    const spike = elements.find(el => el.data.id === `${id}-spike`)?.data.label
+
+    setEditing({
+      id,
+      renderedPosition: e.renderedPosition(),
+      position: e.position(),
+      rules,
+      spike
+    })
+  }
   const onDeleteNode = (id: string) => {
     setElements(elements => elements.filter(el => el.data.rootId !== id))
   }
@@ -133,7 +167,8 @@ function App() {
     setEditing({
       renderedPosition: evt.renderedPosition,
       position: evt.position,
-      value: ''
+      rules: '',
+      spike: ''
     })
   }
   const onCreateOutput = (evt: cytoscapejs.EventObject) => {
@@ -187,8 +222,11 @@ function App() {
         commands: [
           {
             content: 'Edit Node',
-            select: function (ele: cytoscapejs.NodeSingular) {
-              cbsRef.current.onEditNode(ele.id())
+            select: function (
+              ele: cytoscapejs.NodeSingular,
+              e: cytoscapejs.EventObject
+            ) {
+              cbsRef.current.onEditNode(ele, e)
             }
           },
           {
@@ -218,6 +256,7 @@ function App() {
     <Container>
       <Graph
         elements={elements}
+        editing={editing}
         cxtMenus={cxtMenus}
         onEdgeCreate={onEdgeCreate}
       />
@@ -231,13 +270,28 @@ function App() {
             <div>
               <label>Rules</label>
             </div>
-            <Input
-              autoFocus
-              ref={inputRef}
-              onBlur={onInputBlur}
-              value={editing?.value}
-              onChange={onInputChange}
-            />
+            <div>
+              <RulesInput
+                autoFocus
+                ref={inputRef}
+                value={editing?.rules}
+                onChange={onRulesChange}
+              />
+            </div>
+            <div>
+              <label>Initial Spikes</label>
+            </div>
+            <div>
+              <SpikeInput
+                placeholder="0"
+                type="number"
+                value={editing?.spike}
+                onChange={onSpikeChange}
+              />
+            </div>
+            <div>
+              <button>Save Node</button>
+            </div>
           </form>
         </InputContainer>
       )}
@@ -259,13 +313,20 @@ const InputContainer = styled.div`
   transform: translate3d(-50%, -50%, 0);
 `
 
-const Input = styled.textarea`
+const RulesInput = styled.textarea`
   background-color: rgba(244, 244, 244, 1);
   height: 150px;
   margin: 2px;
   outline-width: thin;
   text-align: center;
   width: 100px;
+`
+
+const SpikeInput = styled.input`
+  background-color: rgba(244, 244, 244, 1);
+  margin: 2px;
+  outline-width: thin;
+  text-align: center;
 `
 
 export default App

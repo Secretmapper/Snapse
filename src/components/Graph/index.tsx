@@ -2,9 +2,11 @@ import React, { useEffect, useRef } from 'react'
 import cytoscapejs from 'cytoscape'
 import Cytoscape from 'react-cytoscapejs'
 import useAnimateEdges from './useAnimateEdges'
+import classList from '../../utils/classList'
 
 type IGraph = {
   elements: cytoscapejs.ElementDefinition[]
+  editing: { id?: string } | null
   onTap?: (evt: cytoscapejs.EventObject) => void
   onEdgeCreate?: (
     src: cytoscapejs.NodeSingular,
@@ -18,6 +20,33 @@ type CxtMenu = any
 function Graph(props: IGraph) {
   const [cyRef, setCy] = useAnimateEdges()
   const cyCBs = useRef<any>()
+
+  const editingRef = useRef(props.editing)
+
+  let elements = props.elements
+  if (
+    editingRef.current !== props.editing ||
+    (editingRef.current &&
+      props.editing &&
+      editingRef.current.id !== props.editing.id)
+  ) {
+    elements = elements.map(item => {
+      if (props && props.editing) {
+        if (props.editing.id === item.data.id) {
+          item = {
+            ...item,
+            classes: classList.add(item.classes || '', 'node--editing')
+          }
+        } else {
+          item = {
+            ...item,
+            classes: classList.remove(item.classes || '', 'node--editing')
+          }
+        }
+      }
+      return item
+    })
+  }
 
   cyCBs.current = { onTap: props.onTap, onEdgeCreate: props.onEdgeCreate }
   useEffect(() => {
@@ -59,7 +88,7 @@ function Graph(props: IGraph) {
   return (
     <Cytoscape
       cy={setCy}
-      elements={props.elements}
+      elements={elements}
       style={{ width: '100%', height: '100%' }}
       stylesheet={stylesheet}
     />
@@ -67,6 +96,12 @@ function Graph(props: IGraph) {
 }
 
 const stylesheet: cytoscapejs.Stylesheet[] = [
+  {
+    selector: '.node--editing',
+    style: {
+      opacity: 0
+    }
+  },
   {
     selector: '.snapse-node, .snapse-output',
     style: {
