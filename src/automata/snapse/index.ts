@@ -36,27 +36,35 @@ export type NeuronsStatesMap = {
 }
 
 export const neurons: NeuronsMap = {
-  q0: {
-    id: 'q0',
-    spikes: 2,
-    rules: ['a/a->a;1'],
-    out: ['q1'],
-    position: { x: 250, y: 250 },
-    isOutput: false
-  },
   q1: {
     id: 'q1',
     spikes: 2,
-    rules: ['aa/aa->a;2'],
+    rules: ['aa/aa->a;1'],
     out: ['q2'],
-    position: { x: 400, y: 250 },
+    position: { x: 300, y: 250 },
     isOutput: false
   },
   q2: {
     id: 'q2',
     spikes: 2,
     isOutput: true,
-    position: { x: 600, y: 250 }
+    position: { x: 600, y: 450 }
+  },
+  q3: {
+    id: 'q3',
+    spikes: 1,
+    rules: ['a/a->a;2'],
+    out: ['q1', 'q4'],
+    position: { x: 100, y: 100 },
+    isOutput: false
+  },
+  q4: {
+    id: 'q4',
+    spikes: 1,
+    rules: ['a/a->a;4'],
+    out: ['q1', 'q3'],
+    position: { x: 100, y: 350 },
+    isOutput: false
   }
 }
 

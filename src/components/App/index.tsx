@@ -119,7 +119,7 @@ function App() {
     setIsPlaying(p => !p)
   }
   const onBack = (n: NeuronsMap = neurons) => {
-    setNeuronsState(neuronsState => stepBack(n, neuronsState))
+    // setNeuronsState(neuronsState => stepBack(n, neuronsState))
   }
   const onForward = (n: NeuronsMap = neurons) => {
     setNeuronsState(neuronsState => step(n, neuronsState))

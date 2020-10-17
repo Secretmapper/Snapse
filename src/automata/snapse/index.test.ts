@@ -1,4 +1,29 @@
-import { initialize, neurons, step, stepBack } from './index'
+import { initialize, NeuronsMap, step, stepBack } from './index'
+
+export const neurons: NeuronsMap = {
+  q0: {
+    id: 'q0',
+    spikes: 2,
+    rules: ['a/a->a;1'],
+    out: ['q1'],
+    position: { x: 250, y: 250 },
+    isOutput: false
+  },
+  q1: {
+    id: 'q1',
+    spikes: 2,
+    rules: ['aa/aa->a;2'],
+    out: ['q2'],
+    position: { x: 400, y: 250 },
+    isOutput: false
+  },
+  q2: {
+    id: 'q2',
+    spikes: 2,
+    isOutput: true,
+    position: { x: 600, y: 250 }
+  }
+}
 
 const states = [
   {
