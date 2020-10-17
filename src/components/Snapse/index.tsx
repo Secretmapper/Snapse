@@ -8,10 +8,9 @@ import React, {
 import cytoscapejs from 'cytoscape'
 import Graph from '../Graph'
 import styled from 'styled-components'
-import { createNeuron, createOutput } from './helpers'
 import { NeuronsMap } from '../../automata/snapse'
 
-let qId = 2
+let qId = 3
 
 type EditingState = {
   id?: string
@@ -29,13 +28,11 @@ type EditingState = {
 
 export type ISnapse = {
   elements: cytoscapejs.ElementDefinition[]
-  setElements: Dispatch<SetStateAction<cytoscapejs.ElementDefinition[]>>
   setNeurons: Dispatch<SetStateAction<NeuronsMap>>
 }
 
 function Snapse(props: ISnapse) {
   const elements = props.elements
-  const setElements = props.setElements
   const [editing, setEditing] = useState<EditingState | null>(null)
 
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -47,8 +44,6 @@ function Snapse(props: ISnapse) {
 
       if (editing.id != null) {
         const id = editing.id
-        const rules = elements.find(el => el.data.id === `${id}-rules`)
-        const spike = elements.find(el => el.data.id === `${id}-spike`)
         props.setNeurons(neurons => ({
           ...neurons,
           [id]: {
@@ -57,28 +52,23 @@ function Snapse(props: ISnapse) {
             spikes: spikeLabel
           }
         }))
-
-        if (rules) {
-          rules.data.label = editing.rules
-        }
-        if (spike) {
-          spike.data.label = spikeLabel
-        }
       } else {
         // create a new node
         const id = `q${qId++}`
-        setElements(elms => [
-          ...elements,
-          ...createNeuron(
+        props.setNeurons(neurons => ({
+          ...neurons,
+          [id]: {
             id,
-            editing.position.x,
-            editing.position.y,
-            id,
-            editing.rules,
-            spikeLabel,
-            0
-          )
-        ])
+            spikes: spikeLabel,
+            position: {
+              x: editing.position.x,
+              y: editing.position.y
+            },
+            rules: editing.rules.split('\n'),
+            out: [],
+            isOutput: false
+          }
+        }))
       }
       setEditing(null)
     }
@@ -108,10 +98,24 @@ function Snapse(props: ISnapse) {
     })
   }
   const onDeleteNode = (id: string) => {
-    setElements(elements => elements.filter(el => el.data.rootId !== id))
+    props.setNeurons(neurons => {
+      const newNeurons = { ...neurons }
+      delete newNeurons[id]
+      return newNeurons
+    })
   }
-  const onDeleteEdge = (id: string) => {
-    setElements(elements => elements.filter(el => el.data.id !== id))
+  const onDeleteEdge = (ele: cytoscapejs.NodeSingular) => {
+    const source = ele.data('source')
+    const target = ele.data('target')
+    props.setNeurons(prev => {
+      const neurons = { ...prev }
+      const neuron = { ...neurons[source] }
+      if (neuron.isOutput === false) {
+        neuron.out = neuron.out.filter(val => val !== target)
+      }
+      return neurons
+    })
+    // setElements(elements => elements.filter(el => el.data.id !== id))
   }
 
   const onSurfaceClick = (evt: cytoscapejs.EventObject) => {
@@ -124,20 +128,33 @@ function Snapse(props: ISnapse) {
   }
   const onCreateOutput = (evt: cytoscapejs.EventObject) => {
     const id = `q${qId++}`
-    setElements([
-      ...elements,
-      ...createOutput(id, evt.position.x, evt.position.y, id, 12)
-    ])
+    props.setNeurons(neurons => ({
+      ...neurons,
+      [id]: {
+        id,
+        spikes: 1,
+        position: {
+          x: evt.position.x,
+          y: evt.position.y
+        },
+        isOutput: true
+      }
+    }))
   }
   const onEdgeCreate = (
     src: cytoscapejs.NodeSingular,
     dst: cytoscapejs.NodeSingular,
     addedEles: cytoscapejs.EdgeCollection
   ) => {
-    setElements([
-      ...elements,
-      ...(addedEles.jsons() as any).map((a: any) => ({ data: a.data }))
-    ])
+    const id = src.id()
+    props.setNeurons(prev => {
+      const neurons = { ...prev }
+      const neuron = { ...neurons[id] }
+      if (neuron.isOutput === false) {
+        neuron.out = [...neuron.out, dst.id()]
+      }
+      return neurons
+    })
   }
 
   const cbs = {
@@ -194,7 +211,7 @@ function Snapse(props: ISnapse) {
           {
             content: 'Delete Edge',
             select: function (ele: cytoscapejs.NodeSingular) {
-              cbsRef.current.onDeleteEdge(ele.id())
+              cbsRef.current.onDeleteEdge(ele)
             }
           }
         ]

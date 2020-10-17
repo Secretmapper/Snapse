@@ -1,10 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import cytoscapejs from 'cytoscape'
 import Snapse from '../Snapse'
 import styled from 'styled-components'
 import {
   initialize,
+  initializeState,
   neurons as initialNeurons,
+  NeuronState,
   NeuronsMap,
   NeuronsStatesMap,
   step
@@ -21,10 +23,10 @@ function convert(
 
   for (let k in neurons) {
     const neuron = neurons[k]
-    const state = neuronsState[k]
+    const state: NeuronState = neuronsState[k] || initializeState(neuron)
     const prevState = prevStates[neuron.id]
 
-    if (!('isOutput' in neuron)) {
+    if (!neuron.isOutput) {
       const neuronCard = createNeuron(
         neuron.id,
         neuron.position.x,
@@ -106,20 +108,18 @@ function App() {
   const [neurons, setNeurons] = useState(initialNeurons)
   const [neuronsState, setNeuronsState] = useState(() => initialize(neurons))
   const previousNeuronsState = usePrevious(neuronsState)
-  const [, setElements] = useState(() => convert(initialNeurons, neuronsState))
 
   const onForward = () => {
     setNeuronsState(step(neurons, neuronsState))
   }
-  const elements = convert(neurons, neuronsState, previousNeuronsState)
+  const elements = useMemo(
+    () => convert(neurons, neuronsState, previousNeuronsState),
+    [neurons, neuronsState, previousNeuronsState]
+  )
 
   return (
     <Container>
-      <Snapse
-        elements={elements}
-        setElements={setElements}
-        setNeurons={setNeurons}
-      />
+      <Snapse elements={elements} setNeurons={setNeurons} />
       <Controls>
         <StepBackButton>Back</StepBackButton>
         <PlayButton>Play</PlayButton>

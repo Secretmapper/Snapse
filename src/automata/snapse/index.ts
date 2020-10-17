@@ -2,7 +2,7 @@ import produce from 'immer'
 
 type NeuronID = string
 type NeuronRule = string
-type NeuronState = {
+export type NeuronState = {
   spikes: number
   delay: number
   rule?: NeuronRule
@@ -19,7 +19,7 @@ type BaseNeuron = {
 type NormalNeuron = BaseNeuron & {
   rules: NeuronRule[]
   out: NeuronID[]
-  isOutput?: false
+  isOutput: false
 }
 
 type OutputNeuron = BaseNeuron & {
@@ -40,14 +40,16 @@ export const neurons: NeuronsMap = {
     spikes: 2,
     rules: ['a/a->a;1'],
     out: ['q1'],
-    position: { x: 250, y: 250 }
+    position: { x: 250, y: 250 },
+    isOutput: false
   },
   q1: {
     id: 'q1',
     spikes: 2,
     rules: ['aa/aa->a;2'],
     out: ['q2'],
-    position: { x: 400, y: 250 }
+    position: { x: 400, y: 250 },
+    isOutput: false
   },
   q2: {
     id: 'q2',
@@ -62,14 +64,17 @@ export function initialize(neurons: NeuronsMap) {
   const states: NeuronsStatesMap = {}
   for (const k in neurons) {
     const neuron = neurons[k]
-
-    states[k] = {
-      justResolvedRule: false,
-      spikes: neuron.spikes,
-      delay: 0
-    }
+    states[k] = initializeState(neuron)
   }
   return states
+}
+
+export function initializeState(neuron: Neuron) {
+  return {
+    justResolvedRule: false,
+    spikes: neuron.spikes,
+    delay: 0
+  }
 }
 
 function parseRule(rule: NeuronRule) {
