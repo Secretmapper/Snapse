@@ -85,14 +85,20 @@ export function initializeState(neuron: Neuron) {
   }
 }
 
-function parseRule(rule: NeuronRule) {
-  const [str, delayStr] = rule.split(';') // ['E/a_c->a_p', 'd']
-  const [input, produces] = str.split('->') // ['E/a_c', 'a_p']
-  const [requires, consumes] = input.split('/') // ['E', 'a_c']
+type RuleMap = [number, number, number, number]
+export function parseRule(rule: NeuronRule): RuleMap | false {
+  const re = /(a+)\/(a+)->(a+);([0-9]+)/
+  const res = re.exec(rule)
+  if (res) {
+    const [, requires, consumes, produces, delayStr] = res
+    const delay = parseInt(delayStr, 10)
+    return [requires.length, consumes.length, produces.length, delay]
+  }
 
-  const delay = parseInt(delayStr, 10)
-
-  return [requires.length, produces.length, consumes.length, delay]
+  return false
+}
+export function areRulesValid(rules: NeuronRule[]) {
+  return rules.every(parseRule)
 }
 
 export function step(neurons: NeuronsMap, prevStates: NeuronsStatesMap) {
@@ -110,35 +116,37 @@ export function step(neurons: NeuronsMap, prevStates: NeuronsStatesMap) {
       delete state.justResolvedRule
 
       if (!neuron.isOutput) {
-        if (state.delay > 0) {
-          hasTriggered = true
-          state.delay--
+        if (areRulesValid(neuron.rules)) {
+          if (state.delay > 0) {
+            hasTriggered = true
+            state.delay--
 
-          if (state.delay === 0) {
-            // resolve neuron
-            if (state.rule) {
-              const [, produces, consumes] = parseRule(state.rule)
+            if (state.delay === 0) {
+              // resolve neuron
+              if (state.rule) {
+                const [, consumes, produces] = parseRule(state.rule) as RuleMap
 
-              state.spikes -= consumes
-              state.justResolvedRule = state.rule
-              delete state.rule
+                state.spikes -= consumes
+                state.justResolvedRule = state.rule
+                delete state.rule
 
-              const neuronOutKeys = (neurons[k] as NormalNeuron).out
-              for (let k of neuronOutKeys) {
-                spikeAdds[k] =
-                  k in spikeAdds ? spikeAdds[k] + produces : produces
+                const neuronOutKeys = (neurons[k] as NormalNeuron).out
+                for (let k of neuronOutKeys) {
+                  spikeAdds[k] =
+                    k in spikeAdds ? spikeAdds[k] + produces : produces
+                }
               }
             }
-          }
-        } else if (state.delay === 0) {
-          if (neuron.out && neuron.out.length > 0) {
-            const rule = neuron.rules[0]
-            const [requires, , , delay] = parseRule(rule)
+          } else if (state.delay === 0) {
+            if (neuron.out && neuron.out.length > 0) {
+              const rule = neuron.rules[0]
+              const [requires, , , delay] = parseRule(rule) as RuleMap
 
-            if (state.spikes === requires) {
-              hasTriggered = true
-              state.rule = rule
-              state.delay = delay
+              if (state.spikes === requires) {
+                hasTriggered = true
+                state.rule = rule
+                state.delay = delay
+              }
             }
           }
         }
@@ -174,7 +182,9 @@ export function stepBack(neurons: NeuronsMap, nextStates: NeuronsStatesMap) {
         if (state.delay === 0) {
           // resolved neuron
           if (state.justResolvedRule) {
-            const [, produces, consumes] = parseRule(state.justResolvedRule)
+            const [, consumes, produces] = parseRule(
+              state.justResolvedRule
+            ) as RuleMap
             state.spikes += consumes
             state.rule = state.justResolvedRule
             state.delay++
@@ -187,7 +197,7 @@ export function stepBack(neurons: NeuronsMap, nextStates: NeuronsStatesMap) {
           }
         } else if (state.rule) {
           // running a rule
-          const [, , , delay] = parseRule(state.rule)
+          const [, , , delay] = parseRule(state.rule) as RuleMap
           // it just started running
           if (state.delay === delay) {
             delete state.rule

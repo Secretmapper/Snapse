@@ -130,6 +130,13 @@ const stylesheet: cytoscapejs.Stylesheet[] = [
     }
   },
   {
+    selector: '.snapse-node__rules--invalid',
+    style: {
+      'background-color': '#ffbbbb',
+      'border-color': '#ff4e4d'
+    }
+  },
+  {
     selector: '.snapse-node__output',
     style: {
       height: 50,

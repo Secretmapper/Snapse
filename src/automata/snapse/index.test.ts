@@ -1,4 +1,5 @@
-import { initialize, NeuronsMap, step, stepBack } from './index'
+import { textChangeRangeIsUnchanged } from 'typescript'
+import { initialize, NeuronsMap, parseRule, step, stepBack } from './index'
 
 export const neurons: NeuronsMap = {
   q0: {
@@ -90,6 +91,22 @@ const states = [
   }
 ]
 
+test('matches proper rules', () => {
+  expect(parseRule('a/a->a;1')).toEqual([1, 1, 1, 1])
+  expect(parseRule('aa/a->a;1')).toEqual([2, 1, 1, 1])
+  expect(parseRule('a/aa->a;1')).toEqual([1, 2, 1, 1])
+  expect(parseRule('a/a->aa;1')).toEqual([1, 1, 2, 1])
+  expect(parseRule('a/a->a;2')).toEqual([1, 1, 1, 2])
+  expect(parseRule('a/a->a;20')).toEqual([1, 1, 1, 20])
+
+  expect(parseRule('/a->a;20')).toEqual(false)
+  expect(parseRule('a/->a;20')).toEqual(false)
+  expect(parseRule('a/a->;20')).toEqual(false)
+  expect(parseRule('a/a->;')).toEqual(false)
+  expect(parseRule('a///a->;5')).toEqual(false)
+  expect(parseRule('')).toEqual(false)
+})
+/*
 test('creates initial state', () => {
   const init = initialize(neurons)
   expect(init).toEqual(states[0])
@@ -118,3 +135,5 @@ xtest('step generates prev state', () => {
   expect(s_1).toEqual(states[1])
   expect(s_0).toEqual(states[0])
 })
+
+*/

@@ -48,7 +48,7 @@ function Snapse(props: ISnapse) {
           ...neurons,
           [id]: {
             ...neurons[id],
-            rules: editing.rules.split('\n'),
+            rules: editing.rules.trim().split('\n'),
             spikes: spikeLabel
           }
         }))
@@ -64,7 +64,7 @@ function Snapse(props: ISnapse) {
               x: editing.position.x,
               y: editing.position.y
             },
-            rules: editing.rules.split('\n'),
+            rules: editing.rules.trim().split('\n'),
             out: [],
             isOutput: false
           }

@@ -11,7 +11,8 @@ import {
   NeuronsMap,
   NeuronsStatesMap,
   step,
-  stepBack
+  stepBack,
+  areRulesValid
 } from '../../automata/snapse'
 import { createEdge, createNeuron, createOutput } from '../Snapse/helpers'
 import classList from '../../utils/classList'
@@ -31,6 +32,7 @@ function convert(
     const prevState = prevStates[neuron.id]
 
     if (!neuron.isOutput) {
+      const validRules = areRulesValid(neuron.rules)
       const neuronCard = createNeuron(
         neuron.id,
         neuron.position.x,
@@ -40,6 +42,12 @@ function convert(
         state.spikes,
         state.delay
       )
+      if (!validRules) {
+        neuronCard[1].classes = classList.add(
+          neuronCard[1].classes,
+          'snapse-node__rules--invalid'
+        )
+      }
       if (prevState) {
         if (prevState.spikes < state.spikes) {
           neuronCard[2].classes = classList.add(
