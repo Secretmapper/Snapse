@@ -37,6 +37,7 @@ export const createOutput = (
   x: number,
   y: number,
   label: string,
+  output: string,
   spike: number
 ): cytoscapejs.ElementDefinition[] => [
   {
@@ -45,14 +46,14 @@ export const createOutput = (
     position: { x: 0, y: 0 }
   },
   {
-    data: { rootId: id, id: `${id}-output`, parent: id, label: '' },
+    data: { rootId: id, id: `${id}-output`, parent: id, label: output },
     classes: 'snapse-node__output',
     position: { x, y: y }
   },
   {
     data: { rootId: id, id: `${id}-spike`, parent: id, label: spike },
     classes: 'snapse-node__spike',
-    position: { x, y: y + 50 }
+    position: { x, y: y + 40 }
   }
 ]
 

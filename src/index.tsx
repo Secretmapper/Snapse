@@ -4,6 +4,7 @@ import './index.css'
 import App from './components/App'
 import * as serviceWorker from './serviceWorker'
 
+import 'typeface-montserrat'
 import cytoscape from 'cytoscape'
 import cxtmenu from 'cytoscape-cxtmenu'
 import edgehandles from 'cytoscape-edgehandles'

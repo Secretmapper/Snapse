@@ -115,7 +115,6 @@ function Snapse(props: ISnapse) {
       }
       return neurons
     })
-    // setElements(elements => elements.filter(el => el.data.id !== id))
   }
 
   const onSurfaceClick = (evt: cytoscapejs.EventObject) => {
@@ -153,8 +152,12 @@ function Snapse(props: ISnapse) {
       if (neuron.isOutput === false) {
         neuron.out = [...neuron.out, dst.id()]
       }
+      neurons[id] = neuron
       return neurons
     })
+    // let's remove the added elements
+    // and let our passed props recreate it
+    addedEles.remove()
   }
 
   const cbs = {

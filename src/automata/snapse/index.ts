@@ -5,8 +5,9 @@ type NeuronRule = string
 export type NeuronState = {
   spikes: number
   delay: number
+  bitstring?: string
   rule?: NeuronRule
-  justResolvedRule?: boolean
+  justResolvedRule?: NeuronRule
 }
 
 type BaseNeuron = {
@@ -71,7 +72,6 @@ export function initialize(neurons: NeuronsMap) {
 
 export function initializeState(neuron: Neuron) {
   return {
-    justResolvedRule: false,
     spikes: neuron.spikes,
     delay: 0
   }
@@ -88,49 +88,116 @@ function parseRule(rule: NeuronRule) {
 }
 
 export function step(neurons: NeuronsMap, prevStates: NeuronsStatesMap) {
-  return produce(prevStates, states => {
+  // let's us know if we're actually stepping
+  // through or the system has finished
+  let hasTriggered = false
+  const newStates = produce(prevStates, states => {
     const spikeAdds: { [key: string]: number } = {}
 
     for (const k in neurons) {
       const neuron = neurons[k]
+      states[k] = states[k] || initializeState(neuron)
+
       const state = states[k]
-      states[k].justResolvedRule = false
+      delete state.justResolvedRule
 
-      if (state.delay > 0) {
-        state.delay--
+      if (!neuron.isOutput) {
+        if (state.delay > 0) {
+          hasTriggered = true
+          state.delay--
 
-        if (state.delay === 0) {
-          // resolve neuron
-          if (state.rule) {
-            const [, produces, consumes] = parseRule(state.rule)
+          if (state.delay === 0) {
+            // resolve neuron
+            if (state.rule) {
+              const [, produces, consumes] = parseRule(state.rule)
 
-            states[k].spikes -= consumes
-            delete states[k].rule
-            states[k].justResolvedRule = true
+              state.spikes -= consumes
+              state.justResolvedRule = state.rule
+              delete state.rule
 
-            const neuronOutKeys = (neurons[k] as NormalNeuron).out
-            for (let k of neuronOutKeys) {
-              spikeAdds[k] = k in spikeAdds ? spikeAdds[k] + produces : produces
+              const neuronOutKeys = (neurons[k] as NormalNeuron).out
+              for (let k of neuronOutKeys) {
+                spikeAdds[k] =
+                  k in spikeAdds ? spikeAdds[k] + produces : produces
+              }
             }
           }
-        }
-      } else if (state.delay === 0) {
-        if (!neuron.isOutput) {
+        } else if (state.delay === 0) {
           if (neuron.out && neuron.out.length > 0) {
             const rule = neuron.rules[0]
             const [requires, , , delay] = parseRule(rule)
 
-            if (state.spikes >= requires) {
+            if (state.spikes === requires) {
+              hasTriggered = true
               state.rule = rule
               state.delay = delay
             }
           }
+        }
+      } else {
+        if (!(k in spikeAdds)) {
+          spikeAdds[k] = 0
         }
       }
     }
 
     for (const k in spikeAdds) {
       states[k].spikes += spikeAdds[k]
+      if (k in neurons && neurons[k].isOutput) {
+        states[k].bitstring =
+          (states[k].bitstring || '') + (spikeAdds[k] || '0')
+      }
+    }
+  })
+
+  return hasTriggered ? newStates : prevStates
+}
+
+export function stepBack(neurons: NeuronsMap, nextStates: NeuronsStatesMap) {
+  // TODO: This produces wrong output if the resolved rules are missing
+  return produce(nextStates, states => {
+    const spikeAdds: { [key: string]: number } = {}
+
+    for (const k in neurons) {
+      const neuron = neurons[k]
+      const state = states[k]
+
+      if (!neuron.isOutput) {
+        if (state.delay === 0) {
+          // resolved neuron
+          if (state.justResolvedRule) {
+            const [, produces, consumes] = parseRule(state.justResolvedRule)
+            state.spikes += consumes
+            state.rule = state.justResolvedRule
+            state.delay++
+            delete state.justResolvedRule
+
+            const neuronOutKeys = (neurons[k] as NormalNeuron).out
+            for (let k of neuronOutKeys) {
+              spikeAdds[k] = k in spikeAdds ? spikeAdds[k] + produces : produces
+            }
+          }
+        } else if (state.rule) {
+          // running a rule
+          const [, , , delay] = parseRule(state.rule)
+          // it just started running
+          if (state.delay === delay) {
+            delete state.rule
+            state.delay = 0
+          } else {
+            state.delay++
+          }
+        }
+      } else {
+        state.bitstring = state.bitstring?.slice(0, -1)
+        if (state.bitstring?.length === 0) {
+          delete state.bitstring
+        }
+      }
+    }
+
+    for (const k in spikeAdds) {
+      states[k].spikes -= spikeAdds[k]
     }
   })
 }

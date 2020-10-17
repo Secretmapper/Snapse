@@ -1,74 +1,64 @@
-import { initialize, neurons, step } from './index'
+import { initialize, neurons, step, stepBack } from './index'
 
 const states = [
   {
     q0: {
-      justResolvedRule: false,
       spikes: 2,
       delay: 0
     },
     q1: {
-      justResolvedRule: false,
       spikes: 2,
       delay: 0
     },
     q2: {
-      justResolvedRule: false,
       spikes: 2,
       delay: 0
     }
   },
   {
     q0: {
-      justResolvedRule: false,
       spikes: 2,
-      delay: 1,
-      rule: 'a/a->a;1'
+      delay: 0
     },
     q1: {
-      justResolvedRule: false,
       spikes: 2,
       delay: 2,
       rule: 'aa/aa->a;2'
     },
     q2: {
-      justResolvedRule: false,
+      bitstring: '0',
       spikes: 2,
       delay: 0
     }
   },
   {
     q0: {
-      justResolvedRule: true,
-      spikes: 1,
+      spikes: 2,
       delay: 0
     },
     q1: {
-      justResolvedRule: false,
-      spikes: 3,
+      spikes: 2,
       delay: 1,
       rule: 'aa/aa->a;2'
     },
     q2: {
-      justResolvedRule: false,
+      bitstring: '00',
       spikes: 2,
       delay: 0
     }
   },
   {
     q0: {
-      justResolvedRule: false,
-      spikes: 1,
-      delay: 1,
-      rule: 'a/a->a;1'
+      spikes: 2,
+      delay: 0
     },
     q1: {
-      justResolvedRule: true,
-      spikes: 1,
+      justResolvedRule: 'aa/aa->a;2',
+      spikes: 0,
       delay: 0
     },
     q2: {
-      justResolvedRule: false,
+      bitstring: '001',
       spikes: 3,
       delay: 0
     }
@@ -90,4 +80,16 @@ test('step generates next state', () => {
   expect(s_1).toEqual(states[1])
   expect(s_2).toEqual(states[2])
   expect(s_3).toEqual(states[3])
+})
+
+xtest('step generates prev state', () => {
+  const s_3 = states[3]
+  const s_2 = stepBack(neurons, s_3)
+  const s_1 = stepBack(neurons, s_2)
+  const s_0 = stepBack(neurons, s_1)
+
+  expect(s_3).toEqual(states[3])
+  expect(s_2).toEqual(states[2])
+  expect(s_1).toEqual(states[1])
+  expect(s_0).toEqual(states[0])
 })

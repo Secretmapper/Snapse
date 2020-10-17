@@ -26,6 +26,7 @@
     "react-dom": "^16.14.0",
     "react-scripts": "3.4.3",
     "styled-components": "^5.2.0",
+    "typeface-montserrat": "^1.1.13",
     "typescript": "^3.7.5",
     "use-immer": "^0.4.1"
   },
