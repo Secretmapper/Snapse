@@ -11,7 +11,6 @@ import {
   NeuronsMap,
   NeuronsStatesMap,
   step,
-  stepBack,
   areRulesValid
 } from '../../automata/snapse'
 import { createEdge, createNeuron, createOutput } from '../Snapse/helpers'
@@ -118,8 +117,8 @@ function usePrevious<T>(value: T) {
 }
 
 function App() {
-  const [isPlaying, setIsPlaying] = useState(false)
   const [neurons, setNeurons] = useState(initialNeurons)
+  const [isPlaying, setIsPlaying] = useState(false)
   const [neuronsState, setNeuronsState] = useState(() => initialize(neurons))
   const previousNeuronsStateRef = usePrevious(neuronsState)
 
@@ -157,6 +156,16 @@ function App() {
     return () => clearInterval(interval)
   }, [isPlaying, onIntervalStepRef])
 
+  const onSave = () => {
+    window.localStorage.setItem('neurons', JSON.stringify(neurons))
+  }
+  const onLoad = () => {
+    setNeurons(JSON.parse(window.localStorage.getItem('neurons') || ''))
+  }
+  const onReset = () => {
+    setNeurons(initialNeurons)
+  }
+
   return (
     <Layout
       main={<Snapse elements={elements} setNeurons={setNeurons} />}
@@ -174,6 +183,13 @@ function App() {
           <StepForwardButton onClick={() => onForward()}>
             Forward
           </StepForwardButton>
+          <br />
+          <br />
+          <br />
+          <br />
+          <Button onClick={onSave}>Save</Button>
+          <Button onClick={onLoad}>Load</Button>
+          <Button onClick={onReset}>Reset</Button>
         </Container>
       }
     />
