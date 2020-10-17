@@ -63,6 +63,12 @@ function convert(
           )
         }
       }
+      if (state.rule) {
+        neuronCard[1].classes = classList.add(
+          neuronCard[1].classes,
+          'node--locked'
+        )
+      }
       if (state.justResolvedRule) {
         neuronCard[1].classes = classList.add(
           neuronCard[1].classes,

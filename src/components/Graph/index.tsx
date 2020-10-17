@@ -195,6 +195,12 @@ const stylesheet: cytoscapejs.Stylesheet[] = [
     style: {}
   },
   {
+    selector: '.node--locked',
+    style: {
+      'background-color': '#eeeeee'
+    }
+  },
+  {
     selector: '.edge--triggering',
     style: {
       'line-color': 'darkgreen',

@@ -1,4 +1,3 @@
-import { textChangeRangeIsUnchanged } from 'typescript'
 import { initialize, NeuronsMap, parseRule, step, stepBack } from './index'
 
 export const neurons: NeuronsMap = {
@@ -106,7 +105,7 @@ test('matches proper rules', () => {
   expect(parseRule('a///a->;5')).toEqual(false)
   expect(parseRule('')).toEqual(false)
 })
-/*
+
 test('creates initial state', () => {
   const init = initialize(neurons)
   expect(init).toEqual(states[0])
@@ -124,7 +123,27 @@ test('step generates next state', () => {
   expect(s_3).toEqual(states[3])
 })
 
-xtest('step generates prev state', () => {
+xdescribe('step', () => {
+  describe('neuron', () => {
+    describe('when locked', () => {
+      test('does not receive spike', () => {})
+    })
+    describe('on rule resolution', () => {
+      test('produces spike to output', () => {})
+      test('consumes spike', () => {})
+    })
+  })
+  describe('output', () => {
+    describe('on timestep', () => {
+      test('adds 0 to output', () => {})
+    })
+    describe('on n spike receipt', () => {
+      test('adds n to output', () => {})
+    })
+  })
+})
+
+xtest('stepBack generates prev state', () => {
   const s_3 = states[3]
   const s_2 = stepBack(neurons, s_3)
   const s_1 = stepBack(neurons, s_2)
@@ -135,5 +154,3 @@ xtest('step generates prev state', () => {
   expect(s_1).toEqual(states[1])
   expect(s_0).toEqual(states[0])
 })
-
-*/

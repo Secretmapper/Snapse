@@ -158,7 +158,9 @@ export function step(neurons: NeuronsMap, prevStates: NeuronsStatesMap) {
     }
 
     for (const k in spikeAdds) {
-      states[k].spikes += spikeAdds[k]
+      if (!states[k].rule) {
+        states[k].spikes += spikeAdds[k]
+      }
       if (k in neurons && neurons[k].isOutput) {
         states[k].bitstring =
           (states[k].bitstring || '') + (spikeAdds[k] || '0')
