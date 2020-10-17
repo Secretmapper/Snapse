@@ -2,6 +2,7 @@
   "name": "snapse",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://secretmapper.github.io/Snapse", 
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
@@ -16,6 +17,7 @@
     "cytoscape": "^3.3.2",
     "cytoscape-cxtmenu": "^3.2.0",
     "cytoscape-edgehandles": "^3.6.0",
+    "gh-pages": "^3.1.0",
     "husky": "^4.3.0",
     "immer": "^7.0.9",
     "lint-staged": "^10.4.0",
@@ -31,6 +33,8 @@
     "use-immer": "^0.4.1"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
