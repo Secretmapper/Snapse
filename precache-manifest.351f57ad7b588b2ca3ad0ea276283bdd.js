@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "e041495810bd03c475d877d10182c81f",
+    "revision": "d46e6f88c44083ae3a08faf3b0e38e08",
     "url": "/Snapse/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/Snapse/static/css/2.4c91a558.chunk.css"
   },
   {
-    "revision": "b2cefde5fabdf98149f8",
+    "revision": "db479ba5485652f6c96c",
     "url": "/Snapse/static/css/main.911e4161.chunk.css"
   },
   {
@@ -20,8 +20,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/Snapse/static/js/2.812806cb.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "b2cefde5fabdf98149f8",
-    "url": "/Snapse/static/js/main.c3904ee0.chunk.js"
+    "revision": "db479ba5485652f6c96c",
+    "url": "/Snapse/static/js/main.6671e1ba.chunk.js"
   },
   {
     "revision": "47193ee8dbbecb834f09",
